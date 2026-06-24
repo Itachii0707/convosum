@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+.venv/
+venv/
+.env
+*.sqlite
+*.db
+
+# Node
+node_modules/
+.next/
+out/
+.env.local
+.env.production
+
+# ML artifacts
+models/**/
+!models/.gitkeep
+datasets/**/
+!datasets/.gitkeep
+mlruns/
+mlflow/
+
+# Docker
+*.log
+
+# OS
+.DS_Store
+Thumbs.db

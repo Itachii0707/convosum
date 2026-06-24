@@ -1,0 +1,110 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: convosum-db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-convosum_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-convosum_password}
+      POSTGRES_DB: ${POSTGRES_DB:-convosum_db}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-convosum_user}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: convosum-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: convosum-backend
+    env_file:
+      - .env
+    environment:
+      POSTGRES_SERVER: db
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      HUGGINGFACE_TOKEN: ${HUGGINGFACE_TOKEN:-}
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    command: >
+      sh -c "
+        alembic upgrade head &&
+        uvicorn main:app --host 0.0.0.0 --port 8000 --workers 2
+      "
+
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: convosum-worker
+    env_file:
+      - .env
+    environment:
+      POSTGRES_SERVER: db
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      HUGGINGFACE_TOKEN: ${HUGGINGFACE_TOKEN:-}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    command: celery -A app.worker worker --loglevel=info --concurrency=2
+
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:v2.10.0
+    container_name: convosum-mlflow
+    ports:
+      - "5000:5000"
+    volumes:
+      - mlflow_data:/mlflow
+    command: >
+      mlflow server
+      --host 0.0.0.0
+      --port 5000
+      --default-artifact-root /mlflow/artifacts
+      --backend-store-uri sqlite:///mlflow/mlflow.db
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: convosum-frontend
+    environment:
+      NEXT_PUBLIC_API_URL: http://backend:8000/api/v1
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  mlflow_data:
