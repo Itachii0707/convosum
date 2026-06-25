@@ -19,3 +19,6 @@ services:
         sync: false
       - key: USE_HF_INFERENCE_API
         value: "true"
+      - key: PYTHONUNBUFFERED
+        value: "1"
+
