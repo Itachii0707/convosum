@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: convosum-api
+    runtime: docker
+    plan: free
+    dockerfilePath: Dockerfile
+    dockerContext: .
+    rootDir: backend
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: CELERY_BROKER_URL
+        sync: false
+      - key: CELERY_RESULT_BACKEND
+        sync: false
+      - key: SECRET_KEY
+        generateValue: true
+      - key: HUGGINGFACE_TOKEN
+        sync: false
+      - key: USE_HF_INFERENCE_API
+        value: "true"
