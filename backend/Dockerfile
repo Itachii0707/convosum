@@ -18,5 +18,5 @@ COPY . .
 
 EXPOSE 8000
 
-# Production: run with dynamic port binding for cloud platforms like Render
-CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+# Production: run migrations and start server with dynamic port binding
+CMD ["sh", "-c", "alembic upgrade head && uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"]
