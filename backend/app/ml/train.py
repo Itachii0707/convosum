@@ -1,13 +1,5 @@
 import logging
 
-import mlflow
-from transformers import (
-    AutoModelForSeq2SeqLM,
-    AutoTokenizer,
-    Trainer,
-    TrainingArguments,
-)
-
 from app.core.config import settings
 from app.ml.data import load_hf_dataset
 from app.ml.preprocessing import preprocess_dataset
@@ -29,6 +21,14 @@ def train_model_task(model_name: str, dataset_name: str) -> dict:
     Note: trainer.train() is commented out so the task can be enqueued
     without a GPU available. Uncomment it on a GPU-equipped Celery worker.
     """
+    import mlflow
+    from transformers import (
+        AutoModelForSeq2SeqLM,
+        AutoTokenizer,
+        Trainer,
+        TrainingArguments,
+    )
+
     logger.info("Training job: model=%s  dataset=%s", model_name, dataset_name)
 
     text_col, summary_col = _TEXT_COLS.get(dataset_name, ("dialogue", "summary"))
